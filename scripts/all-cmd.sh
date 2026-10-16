@@ -1,1 +1,1 @@
-mkdir [LOCK33]
+echo hello
