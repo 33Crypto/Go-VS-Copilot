@@ -1,4 +1,5 @@
-LOCK33 Technologies vs code editor.
+mkdir GoOS 
+LOCK33 Technologies VS Code Copilot editor.
 
 Windows Azure Cloud Storage using the Repository pattern
 
