@@ -1,12 +1,12 @@
 {
   "name": "Go-VS-Copilot",
   "short_name": "GoVS",
-  "description": "A Go coding assistant for Chrome on Linux and Android.",
+  "description": "A coding assistant from LOCK33 Development Organization for Chrome on Linux and Android.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#14160f",
-  "theme_color": "#14160f",
+  "background_color": "#0b0e13",
+  "theme_color": "#0b0e13",
   "icons": [
     {
       "src": "/icons/icon-192.png",

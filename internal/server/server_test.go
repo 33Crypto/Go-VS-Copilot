@@ -144,6 +144,53 @@ func TestStaticUI(t *testing.T) {
 	}
 }
 
+func TestLock33Branding(t *testing.T) {
+	h := New(provider.Stub{})
+
+	page := httptest.NewRecorder()
+	h.ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/", nil))
+	body := page.Body.String()
+	for _, want := range []string{
+		`href="https://lock33.dev"`,
+		`target="_blank"`,
+		`rel="noopener noreferrer"`,
+		"LOCK33",
+		"lock33.dev",
+		"Software that stays locked in and holds up.",
+		`content="#0b0e13"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("page missing %q", want)
+		}
+	}
+	if strings.Contains(body, "fonts.googleapis") || strings.Contains(body, "lock33.dev/static") {
+		t.Fatalf("page loads a remote asset: %s", body)
+	}
+
+	css := httptest.NewRecorder()
+	h.ServeHTTP(css, httptest.NewRequest(http.MethodGet, "/app.css", nil))
+	sheet := css.Body.String()
+	for _, want := range []string{"#0b0e13", "#121821", "#263040", "#eef2f6", "#b4bfcc", "#c8ff3e", "#ff9b8f"} {
+		if !strings.Contains(sheet, want) {
+			t.Fatalf("css missing %s", want)
+		}
+	}
+	if strings.Contains(sheet, "url(http") {
+		t.Fatalf("css loads a remote asset")
+	}
+
+	manifest := httptest.NewRecorder()
+	h.ServeHTTP(manifest, httptest.NewRequest(http.MethodGet, "/manifest.webmanifest", nil))
+	if !strings.Contains(manifest.Body.String(), `"theme_color": "#0b0e13"`) {
+		t.Fatalf("manifest = %s", manifest.Body.String())
+	}
+
+	csp := page.Header().Get("Content-Security-Policy")
+	if strings.Contains(csp, "lock33.dev") || strings.Contains(csp, "fonts.g") {
+		t.Fatalf("csp allows a third party: %s", csp)
+	}
+}
+
 func TestIconsDirectoryIsNotListed(t *testing.T) {
 	rec := httptest.NewRecorder()
 	New(provider.Stub{}).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/icons/", nil))

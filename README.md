@@ -1,6 +1,8 @@
 # Go-VS-Copilot
 
-Go-VS-Copilot is a coding-assistant chat. A Go server serves a small web app that runs in Chrome on Linux and in Chrome on Android. You type a prompt, optionally paste code, and get a reply.
+Go-VS-Copilot is a coding-assistant chat built by [LOCK33 Development Organization](https://lock33.dev). A Go server serves a small web app that runs in Chrome on Linux and in Chrome on Android. You type a prompt, optionally paste code, and get a reply.
+
+The page uses the LOCK33 colors and links to [lock33.dev](https://lock33.dev). Those files are part of this app. Nothing is loaded from lock33.dev at runtime, so the installed page still opens offline.
 
 With no API key the server uses a local stub. The stub repeats your prompt and code context and does not call a model. Set the environment variables below when you want an OpenAI-compatible API to answer instead.
 

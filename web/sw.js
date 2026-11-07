@@ -1,4 +1,4 @@
-const CACHE = "govs-shell-v1";
+const CACHE = "govs-shell-v2";
 const ASSETS = [
   "/",
   "/app.css",
