@@ -1,34 +1,20 @@
-mkdir GoOS 
-LOCK33 Technologies VS Code Copilot editor.
+# Go-VS-Copilot
 
-Windows Azure Cloud Storage using the Repository pattern
+The Windows Azure Table Storage repository-pattern sample that used to live in this tree has been removed. That sample is still in [33Crypto/WindowsAzureRepository](https://github.com/33Crypto/WindowsAzureRepository). This repository was not used to delete or change that project.
 
-Repository pattern instead of an ORM but with added Unit of Work and Specification patterns
+What remains here is a handful of short text files, one shell script, one workflow file outside the Actions directory, and an empty Word document. There is no application to build or run.
 
-When querying Azure Tables you will usually use the .NET client to the RESTful interface. The .NET client provides a familiar ADO.NET syntax that is easy to use and works wonderfully with LINQ. To prevent the access code becoming scattered through your code you should be collecting it into some kind of DAL. You should also be thinking about testability of your code and the simplist way to provide this is to have interfaces to your data access code. Okay, so there's nothing earth-shattering here but getting the patterns together and learning to use Azure Tables to their best is probably new to you or your project.
+## Files
 
-IRepository
+- `.github/cosx-erb.yml` — GitHub Actions starter workflow named CI. It checks out the repository and prints "Hello, world!". It sits in `.github/` rather than `.github/workflows/`, so Actions does not run it. The trigger branches are `master`.
+- `scripts/all-cmd.sh` — A one-line script, `echo hello`. It has no shebang, is not marked executable, and is not called by the workflow file.
+- `ci.go` — Not a Go source file. It is five lines of notes (`#Create`, `#Add_Update(gh-os)`, `#Review_Commit`, `Commit.`). Nothing in this tree executes them. `gh-os` is not a file here.
+- `go.os` — The same kind of note, naming `Index.os.tar.zst`. That path is not in this tree. The file that does exist is `Index.cs.tar.zst`.
+- `Index.cs.tar.zst` — Not a zstandard archive and not a tar. The entire file is the line `#Create Index.cs.tar.zst`.
+- `cosx-env.yml` — GitHub's FUNDING.yml template. Every sponsorship platform is left as a comment. It is not an environment configuration, and it is not at `.github/FUNDING.yml`.
+- `cosx-vscode-codeql-tanx-triage.pro*` — Stock CodeQL workflow whose language matrix is `csharp`. The asterisk is part of the filename. The file is in the repository root, so Actions does not run it. This tree no longer contains a C# project for that workflow to build. The actions it references (`actions/checkout@v2` and `github/codeql-action` v1) are the original starter pins.
+- `LOCK33SecDevOpsPyQSL4A.33WebDocxJSEditPro°.docx` — A Word 2010 document with no body text (a `_GoBack` bookmark only). The file on disk is that same document package written twice, back to back. It has no macros, embedded objects, or hyperlinks. Document properties name the creator as `huagen_DEV` (created 2019-04-04, modified 2020-08-03).
 
-What do you want to provide to every object that needs a backing store? I'd suggest searching and saving so here are the two methods every repository is going to need.
+## Other branches
 
-IEntityRepository
-
-What about getting back a particular entity, making changes and saving that back? The first thing to note is that in Azure Tables an entity is stored in the properties of a Table row *but* other entities may also be stored in the same Table. So think entity and not table, which is different to how you would normally think of a repository.
-
-Let's say for this example I want to be able to get a single entity, a range of entities, to be able to delete a given entity and even to page through a range of entities.
-
-To keep the code cleaner I'm going to pass in the parameters as already formed predicates for my where clause. There's little advantage to using the Specification pattern here other than I think it makes the code a little more explicit.
-
-EntityRepository
-
-It's easy enough to pass in a context for your repository following the Unit of Work pattern. You can create this quite simply (see TableStorageContext following). You have to define which Table your entity is stored in and you want that and your context as properties of your class. I find it cleaner to manage (and easier for the next developer to implement) if that work is done in a base class, RepositoryBase.
-
-So now we actually get to the meat of the matter and implement our TableServiceContext methods for the CRUD functionality we need. In this example I've a single Save method that uses the 'Upsert' (InsertOrMerge) functionality available in Azure since v.1.4 (2011-08). The Find method is there for convience - if it doesn't suit your query then simply don't use it.
-
-TableStorageContext
-
-In my ServiceDefinition config I have a CloudConnectionString. This has to be parsed to get the endpoint and account details before I can create the TableServiceContext. A couple of static methods do the job. This object also implements the Commit and Rollback methods for the Unit of Work. My Commit is implementing 'Upsert' so you may want it to be different or you may want to have different implementations of TableStorageContext that you can pass in to your Repository class depending on how it needs to talk to storage.
-
-Further Architectural Options
-
-I favour Uncle Bob's Clean Architecture and as such I wouldn't expose my Repository classes to other modules. I would wrap them in a further service layer that would receive and pass back Model objects. Cloud Table Storage is much more flexible than relational database storage but you have to think about it quite differently and the structure of your code will be very different to what you may be used to.
+This README describes the files on `main`. The other branches on this repository (`patch-1`, `patch-2`, `patch-3`, and `33Crypto-go-cosx-pro(#-0001)`) still contain the Azure sample, along with a few extra stub files that are not on `main`.
