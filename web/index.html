@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14160f">
+  <meta name="description" content="Go-VS-Copilot is a coding assistant you can open in Chrome on Linux and Android.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="GoVS">
+  <title>Go-VS-Copilot</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <div>
+          <h1>Go-VS-Copilot</h1>
+          <p>Coding assistant</p>
+        </div>
+      </div>
+      <p id="provider" class="pill">Checking provider…</p>
+    </header>
+    <main id="transcript" class="transcript" aria-live="polite">
+      <p id="empty" class="empty">Ask about your code. Paste optional context below. With no API key, the reply comes from the local stub on this machine.</p>
+    </main>
+    <form id="composer" class="composer">
+      <details class="context">
+        <summary>Code context</summary>
+        <label class="sr" for="context">Code context</label>
+        <textarea id="context" name="context" rows="6" spellcheck="false" autocomplete="off" placeholder="Paste the file or snippet you want help with"></textarea>
+      </details>
+      <div class="ask">
+        <label class="sr" for="prompt">Prompt</label>
+        <textarea id="prompt" name="prompt" rows="3" required autocomplete="off" enterkeyhint="send" placeholder="Ask about the code, or describe the change you want"></textarea>
+        <button id="send" type="submit">Send</button>
+      </div>
+      <p class="hint">Ctrl+Enter or ⌘+Enter sends. Shift+Enter inserts a line break.</p>
+    </form>
+  </div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
