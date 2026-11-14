@@ -1,34 +1,90 @@
-mkdir GoOS 
-LOCK33 Technologies VS Code Copilot editor.
+# Go-VS-Copilot
 
-Windows Azure Cloud Storage using the Repository pattern
+Go-VS-Copilot is a coding-assistant chat built by [LOCK33 Development Organization](https://lock33.dev). A Go server serves a small web app that runs in Chrome on Linux and in Chrome on Android. You type a prompt, optionally paste code, and get a reply.
 
-Repository pattern instead of an ORM but with added Unit of Work and Specification patterns
+The page uses the LOCK33 colors and links to [lock33.dev](https://lock33.dev). Those files are part of this app. Nothing is loaded from lock33.dev at runtime, so the installed page still opens offline.
 
-When querying Azure Tables you will usually use the .NET client to the RESTful interface. The .NET client provides a familiar ADO.NET syntax that is easy to use and works wonderfully with LINQ. To prevent the access code becoming scattered through your code you should be collecting it into some kind of DAL. You should also be thinking about testability of your code and the simplist way to provide this is to have interfaces to your data access code. Okay, so there's nothing earth-shattering here but getting the patterns together and learning to use Azure Tables to their best is probably new to you or your project.
+With no API key the server uses a local stub. The stub repeats your prompt and code context and does not call a model. Set the environment variables below when you want an OpenAI-compatible API to answer instead.
 
-IRepository
+## Run
 
-What do you want to provide to every object that needs a backing store? I'd suggest searching and saving so here are the two methods every repository is going to need.
+The module targets the current stable Go release, 1.27.
 
-IEntityRepository
+```bash
+go test ./...
+go run ./cmd/govscopilot
+```
 
-What about getting back a particular entity, making changes and saving that back? The first thing to note is that in Azure Tables an entity is stored in the properties of a Table row *but* other entities may also be stored in the same Table. So think entity and not table, which is different to how you would normally think of a repository.
+Then open [http://127.0.0.1:8080](http://127.0.0.1:8080).
 
-Let's say for this example I want to be able to get a single entity, a range of entities, to be able to delete a given entity and even to page through a range of entities.
+`GOVS_ADDR` changes the listen address. The default is `:8080`, which accepts connections on every interface. Build a binary with:
 
-To keep the code cleaner I'm going to pass in the parameters as already formed predicates for my where clause. There's little advantage to using the Specification pattern here other than I think it makes the code a little more explicit.
+```bash
+go build -o govscopilot ./cmd/govscopilot
+./govscopilot
+```
 
-EntityRepository
+## Chrome on Linux
 
-It's easy enough to pass in a context for your repository following the Unit of Work pattern. You can create this quite simply (see TableStorageContext following). You have to define which Table your entity is stored in and you want that and your context as properties of your class. I find it cleaner to manage (and easier for the next developer to implement) if that work is done in a base class, RepositoryBase.
+1. Start the server.
+2. Open [http://127.0.0.1:8080](http://127.0.0.1:8080) in Chrome.
+3. Install it from the install icon in the address bar.
 
-So now we actually get to the meat of the matter and implement our TableServiceContext methods for the CRUD functionality we need. In this example I've a single Save method that uses the 'Upsert' (InsertOrMerge) functionality available in Azure since v.1.4 (2011-08). The Find method is there for convience - if it doesn't suit your query then simply don't use it.
+The page includes a web app manifest and a service worker. `localhost` is a secure context, so Chrome can install the app. The installed window opens the same chat.
 
-TableStorageContext
+## Chrome on Android
 
-In my ServiceDefinition config I have a CloudConnectionString. This has to be parsed to get the endpoint and account details before I can create the TableServiceContext. A couple of static methods do the job. This object also implements the Commit and Rollback methods for the Unit of Work. My Commit is implementing 'Upsert' so you may want it to be different or you may want to have different implementations of TableStorageContext that you can pass in to your Repository class depending on how it needs to talk to storage.
+On a phone that can reach the computer, open `http://<linux-lan-address>:8080`. The chat works there over plain HTTP.
 
-Further Architectural Options
+Installing the app on Android (Add to Home screen) needs HTTPS that the phone trusts. A service worker is registered only in a secure context, and `localhost` on the phone is the phone, not the Linux machine. Keep using the page in the browser until the server is behind HTTPS. The manifest and service worker are already part of the page, so the same URL works for install once it is served over a trusted certificate.
 
-I favour Uncle Bob's Clean Architecture and as such I wouldn't expose my Repository classes to other modules. I would wrap them in a further service layer that would receive and pass back Model objects. Cloud Table Storage is much more flexible than relational database storage but you have to think about it quite differently and the structure of your code will be very different to what you may be used to.
+The server has no login. On a shared network, anyone who can open the port can send prompts. If an API key is configured, those prompts are sent with that key. Use localhost, or a private network you trust.
+
+## Chat
+
+The prompt box is the question. **Code context** is the optional snippet. Ctrl+Enter or ⌘+Enter sends. On a phone, use the Send button. The pill in the header shows `Local stub` or the remote provider and model.
+
+`POST /api/complete`
+
+```json
+{
+  "prompt": "why does this loop skip the last item?",
+  "context": "for i := 0; i < n; i++ {}",
+  "messages": []
+}
+```
+
+`prompt` is required. `context` is optional source. `messages` is earlier turns (`user` or `assistant`), not including the current prompt. The reply is JSON: `reply`, `provider`, and `model`.
+
+`GET /api/health` returns `{"ok":true,"provider":"stub","model":"local-echo"}` when the stub is active.
+
+## Use a model
+
+No key is stored in this repository. The stub stays active until a key is present.
+
+```bash
+export GOVS_API_KEY="the key from your provider"
+export GOVS_MODEL="gpt-4o-mini"
+export GOVS_BASE_URL="https://api.openai.com/v1"
+go run ./cmd/govscopilot
+```
+
+- `GOVS_API_KEY`, or `OPENAI_API_KEY` if the first is unset, selects the OpenAI-compatible provider.
+- `GOVS_BASE_URL` is the API root. The client calls `{GOVS_BASE_URL}/chat/completions`. The default root is `https://api.openai.com/v1`.
+- `GOVS_MODEL` is sent as the model name. The default is `gpt-4o-mini`. Set this to the name your provider expects.
+- `GOVS_PROVIDER=stub` forces the local echo even when a key is set.
+- `GOVS_PROVIDER=openai` requires a key and exits on startup if it is missing.
+
+A local server that speaks the same chat-completions API can be used by setting `GOVS_BASE_URL` to its root and `GOVS_API_KEY` to whatever that server expects. An empty key always means the stub.
+
+## Layout
+
+- `cmd/govscopilot` starts the server.
+- `internal/provider` is the completion interface, the local stub, and the OpenAI-compatible client.
+- `internal/server` is the HTTP API and the tests for it.
+- `web` is the page, stylesheet, script, manifest, service worker, and icons. They are embedded in the binary.
+- `.github/workflows/ci.yml` runs `go test ./...`, `go build`, and `gofmt` on Ubuntu with Go 1.27.3.
+
+## What was removed
+
+This branch no longer contains the Windows Azure Table Storage sample or the template leftovers that shipped with it (`ci.go`, `go.os`, `Index.cs.tar.zst`, `cosx-env.yml`, the CodeQL stub, `scripts/all-cmd.sh`, the empty Word document, and `.github/cosx-erb.yml`). The Azure sample remains in [33Crypto/WindowsAzureRepository](https://github.com/33Crypto/WindowsAzureRepository). That repository is not modified by this project.
