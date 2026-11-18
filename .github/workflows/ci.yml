@@ -34,3 +34,12 @@ jobs:
 
       - name: Build
         run: dotnet build Repository.csproj --configuration Release
+
+      - name: Start Azurite
+        run: |
+          npm install -g azurite
+          azurite-table --silent --location "$RUNNER_TEMP/azurite" &
+          sleep 5
+
+      - name: Test
+        run: dotnet test Tests/Tests.csproj --configuration Release
