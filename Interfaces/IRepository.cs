@@ -2,9 +2,9 @@ namespace AzurePatterns.Interfaces
 {
     using System.Collections.Generic;
 
-    using Microsoft.WindowsAzure.StorageClient;
+    using Azure.Data.Tables;
 
-    public interface IRepository<TEntity> where TEntity : TableServiceEntity
+    public interface IRepository<TEntity> where TEntity : class, ITableEntity, new()
     {
         IEnumerable<TEntity> Find(params Specification<TEntity>[] specifications);
 

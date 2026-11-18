@@ -3,11 +3,11 @@ namespace AzurePatterns.Repositories
     using System.Collections.Generic;
     using System.Linq;
 
+    using Azure.Data.Tables;
+
     using AzurePatterns.Entities;
     using AzurePatterns.Interfaces;
     using AzurePatterns.TableStorage;
-
-    using Microsoft.WindowsAzure.StorageClient;
 
     // NOTE: It's an EntityRepository not a TableRepository because there
     // may be more than one kind of entity stored in a single table.
@@ -19,17 +19,13 @@ namespace AzurePatterns.Repositories
 
         public void Save(Entity entity)
         {
-            // Insert or Merge Entity aka Upsert (>= v.1.4).
-            // NOTE: Upsert may not be currently supported by the emulated storage service.
-            // In case we are already tracking the entity we must first detach for the Upsert to work.
-            this.Context.Detach(entity);
-            this.Context.AttachTo(this.Table, entity);
-            this.Context.UpdateObject(entity);
+            // Insert or Merge Entity aka Upsert, sent on Commit.
+            this.Context.Enqueue(this.Table, new TableTransactionAction(TableTransactionActionType.UpsertMerge, entity));
         }
 
         public void Delete(Entity entity)
         {
-            this.Context.DeleteObject(entity);
+            this.Context.Enqueue(this.Table, new TableTransactionAction(TableTransactionActionType.Delete, entity));
         }
 
         public Entity GetEntity(params Specification<Entity>[] specifications)
@@ -39,25 +35,23 @@ namespace AzurePatterns.Repositories
 
         public IEnumerable<Entity> GetEntities(params Specification<Entity>[] specifications)
         {
-            // new ByKeySpecification("partitionKey")
             return this.Find(specifications);
         }
 
         public IEnumerable<Entity> GetEntitiesPaged(string partitionKey, int pageIndex, int pageSize)
         {
-            var results = this.Find(new ByPartitionKeySpecification("partitionKey"));
+            var results = this.Find(new ByPartitionKeySpecification(partitionKey));
 
             return results.Skip(pageIndex * pageSize).Take(pageSize);
         }
 
         public IEnumerable<Entity> Find(params Specification<Entity>[] specifications)
         {
-            IQueryable<Entity> query = this.Context.CreateQuery<Entity>(this.Table).AsTableServiceQuery();
+            var predicate = Specification<Entity>.All(specifications);
 
-            query = specifications.Aggregate(query, (current, spec) => current.Where(spec.Predicate));
-
-            // TODO: does this perform Execute?
-            return query.ToArray();
+            return predicate == null
+                ? this.Client.Query<Entity>((string)null).ToArray()
+                : this.Client.Query<Entity>(predicate).ToArray();
         }
     }
 }

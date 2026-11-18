@@ -1,82 +1,76 @@
 namespace AzurePatterns.TableStorage
 {
-    using System.Data.Services.Client;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
+
+    using Azure;
+    using Azure.Data.Tables;
 
     using AzurePatterns.Interfaces;
 
-    using Microsoft.WindowsAzure;
-    using Microsoft.WindowsAzure.StorageClient;
-
-    public class TableStorageContext : TableServiceContext, IUnitOfWork
+    // Unit of Work over Azure Tables: changes are queued and sent as
+    // entity group transactions (one per table and partition) on Commit.
+    public class TableStorageContext : IUnitOfWork
     {
+        private const int MaxTransactionSize = 100;
+
+        private readonly List<(string Table, TableTransactionAction Action)> pending =
+            new List<(string, TableTransactionAction)>();
+
         // Constructor allows for setting up a specific connection string (for testing).
+        // Otherwise it is read from the CloudConnectionString environment variable.
         public TableStorageContext(string connectionString = null)
-            : base(BaseAddress(connectionString), CloudCredentials(connectionString))
         {
-            this.SetupContext();
+            var cloudConnectionString = connectionString
+                                        ?? Environment.GetEnvironmentVariable("CloudConnectionString");
+
+            if (string.IsNullOrEmpty(cloudConnectionString))
+            {
+                throw new InvalidOperationException(
+                    "Expected a connection string or the CloudConnectionString environment variable.");
+            }
+
+            this.Service = new TableServiceClient(cloudConnectionString);
+        }
+
+        public TableServiceClient Service { get; private set; }
+
+        public void Enqueue(string table, TableTransactionAction action)
+        {
+            this.pending.Add((table, action));
         }
 
         // NOTE: the implementation of Commit may vary depending on your desired table behaviour.
         public void Commit()
         {
-            try
-            {
-                // Insert or Merge Entity aka Upsert (>=v.1.4) uses 
-                // SaveChangesOptions.None to generate a merge request.
-                this.SaveChanges(SaveChangesOptions.None);
-            }
-            catch (DataServiceRequestException exception)
-            {
-                var dataServiceClientException = exception.InnerException as DataServiceClientException;
-                if (dataServiceClientException != null)
-                {
-                    if (dataServiceClientException.StatusCode == (int)HttpStatusCode.Conflict)
-                    {
-                        // a conflict may arise on a retry where it succeeded so this is ignored.
-                        // TODO: this should be a list of codes to check and ignore/log/retry etc.
-                        return;
-                    }
-                }
+            var batches = this.pending
+                .GroupBy(p => (p.Table, p.Action.Entity.PartitionKey))
+                .SelectMany(g => g.Select((p, i) => (p, i)).GroupBy(x => x.i / MaxTransactionSize))
+                .Select(g => g.Select(x => x.p).ToList())
+                .ToList();
 
-                throw;
+            foreach (var batch in batches)
+            {
+                var client = this.Service.GetTableClient(batch[0].Table);
+
+                try
+                {
+                    client.SubmitTransaction(batch.Select(b => b.Action));
+                }
+                catch (RequestFailedException exception) when (exception.Status == (int)HttpStatusCode.Conflict)
+                {
+                    // a conflict may arise on a retry where it succeeded so this is ignored.
+                }
             }
+
+            this.pending.Clear();
         }
 
         public void Rollback()
         {
-            // TODO: clean up context.
-        }
-
-        private static string BaseAddress(string connectionString)
-        {
-            return CloudStorageAccount(connectionString).TableEndpoint.ToString();
-        }
-
-        private static StorageCredentials CloudCredentials(string connectionString)
-        {
-            return CloudStorageAccount(connectionString).Credentials;
-        }
-
-        private static CloudStorageAccount CloudStorageAccount(string connectionString)
-        {
-            var cloudConnectionString = connectionString ?? CloudConfigurationManager.GetSetting("CloudConnectionString");
-            var cloudStorageAccount = Microsoft.WindowsAzure.CloudStorageAccount.Parse(cloudConnectionString);
-            return cloudStorageAccount;
-        }
-
-        private void SetupContext()
-        {
-            /*
-             * this retry policy will introduce a greater delay if there are retries 
-             * than the original setting of 3 retries in 3 seconds but it will then 
-             * show up a problem with the system without the system failing completely.
-             */
-            this.RetryPolicy = RetryPolicies.RetryExponential(
-                RetryPolicies.DefaultClientRetryCount, RetryPolicies.DefaultClientBackoff);
-
-            // don't throw a DataServiceRequestException when a row doesn't exist.
-            this.IgnoreResourceNotFoundException = true;
+            this.pending.Clear();
         }
     }
 }
