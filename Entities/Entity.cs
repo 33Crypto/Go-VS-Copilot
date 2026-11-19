@@ -1,8 +1,18 @@
-﻿namespace AzurePatterns.Entities
+namespace AzurePatterns.Entities
 {
-    using Microsoft.WindowsAzure.StorageClient;
+    using System;
 
-    public class Entity : TableServiceEntity
+    using Azure;
+    using Azure.Data.Tables;
+
+    public class Entity : ITableEntity
     {
+        public string PartitionKey { get; set; }
+
+        public string RowKey { get; set; }
+
+        public DateTimeOffset? Timestamp { get; set; }
+
+        public ETag ETag { get; set; }
     }
 }

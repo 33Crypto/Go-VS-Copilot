@@ -2,10 +2,9 @@ namespace AzurePatterns.SqlAzure
 {
     using System;
     using System.Collections.Generic;
-    using System.Data.SqlClient;
+    using Microsoft.Data.SqlClient;
     using System.Dynamic;
 
-    using Microsoft.WindowsAzure;
 
     public static class Commands
     {
@@ -17,11 +16,11 @@ namespace AzurePatterns.SqlAzure
             get
             {
                 return connectionString
-                       ?? (connectionString = CloudConfigurationManager.GetSetting("SQLConnectionString"));
+                       ?? (connectionString = Environment.GetEnvironmentVariable("SQLConnectionString"));
             }
         }
 
-        public static void ExecuteNonQuery(string query)
+        public static void ExecuteNonQuery(string query, params SqlParameter[] parameters)
         {
             using (var connection = new SqlConnection(ConnectionString))
             {
@@ -30,6 +29,7 @@ namespace AzurePatterns.SqlAzure
                     connection.Open();
 
                     command.CommandText = query;
+                    command.Parameters.AddRange(parameters);
 
                     command.ExecuteNonQuery();
 
@@ -38,7 +38,7 @@ namespace AzurePatterns.SqlAzure
             }
         }
 
-        public static IEnumerable<dynamic> ExecuteReader(string query)
+        public static IEnumerable<dynamic> ExecuteReader(string query, params SqlParameter[] parameters)
         {
             using (var connection = new SqlConnection(ConnectionString))
             {
@@ -47,6 +47,7 @@ namespace AzurePatterns.SqlAzure
                     connection.Open();
 
                     command.CommandText = query;
+                    command.Parameters.AddRange(parameters);
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -76,13 +77,13 @@ namespace AzurePatterns.SqlAzure
                 {
                     var next = row[property.Name];
 
-                    if (next.GetType() != typeof(DBNull))
+                    if (next != null && next.GetType() != typeof(DBNull))
                     {
                         property.SetValue(element, next, null);
                     }
-
-                    yield return element;
                 }
+
+                yield return element;
             }
         }
 

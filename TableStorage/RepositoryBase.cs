@@ -2,9 +2,9 @@ namespace AzurePatterns.TableStorage
 {
     using System;
 
-    using AzurePatterns.Interfaces;
+    using Azure.Data.Tables;
 
-    using Microsoft.WindowsAzure.StorageClient;
+    using AzurePatterns.Interfaces;
 
     public class RepositoryBase
     {
@@ -20,18 +20,20 @@ namespace AzurePatterns.TableStorage
                 throw new ArgumentNullException("table", "Expected a table name.");
             }
 
-            this.Context = context as TableServiceContext;
+            this.Context = context as TableStorageContext;
             this.Table = table;
 
             // belt-and-braces code - ensure the table is there for the repository.
             if (this.Context != null)
             {
-                var cloudTableClient = new CloudTableClient(this.Context.BaseUri, this.Context.StorageCredentials);
-                cloudTableClient.CreateTableIfNotExist(this.Table);
+                this.Client = this.Context.Service.GetTableClient(this.Table);
+                this.Client.CreateIfNotExists();
             }
         }
 
-        protected TableServiceContext Context { get; private set; }
+        protected TableStorageContext Context { get; private set; }
+
+        protected TableClient Client { get; private set; }
 
         protected string Table { get; private set; }
     }
