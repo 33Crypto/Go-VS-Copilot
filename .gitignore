@@ -1,0 +1,19 @@
+# Secrets and credentials - never commit these
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.publishsettings
+*.cscfg
+secrets.json
+appsettings.*.json
+local.settings.json
+
+# Build output
+bin/
+obj/
+packages/
+.vs/
+*.user
