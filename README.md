@@ -1,6 +1,15 @@
 mkdir GoOS 
 LOCK33 Technologies VS Code Copilot editor.
 
+## Repository card
+
+| | |
+|---|---|
+| **Status** | Active. Contains the Azure Table Storage Repository-pattern sample, modernized to .NET 8 with tests (see PRs). |
+| **Purpose** | Working repo for the LOCK33 VS Code Copilot bot (Go-VS-Copilot). |
+| **Visibility** | Private |
+| **Related** | `33Crypto/GoVS`, `33Crypto/Lockcode` |
+
 Windows Azure Cloud Storage using the Repository pattern
 
 Repository pattern instead of an ORM but with added Unit of Work and Specification patterns
